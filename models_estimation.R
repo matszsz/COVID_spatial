@@ -116,7 +116,7 @@ W_borders_list <- mat2listw(W_borders, style = 'W')
 
 # based on distance
 distance <- distm(coordinates(spatial_data), fun = distCosine) / 1000
-W_distance <- 1/(distance)
+W_distance <- 1/distance
 diag(W_distance) <- 0
 W_distance <- W_distance/rowSums(W_distance)
 W_distance_list <- mat2listw(W_distance, style="W")
