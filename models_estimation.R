@@ -1,4 +1,3 @@
-# libraries
 library('rgdal')
 library('sp')
 library('RColorBrewer')
@@ -92,14 +91,18 @@ spatial_data_plotting <- merge(y = data, x = map_eu[(map_eu@data$NUTS_ID != 'NO0
 pal <- colorRampPalette(brewer.pal(9, "YlOrRd"), bias = 1)
 
 # Figure 1
+pdf(file = "plots/number_of_cases.pdf", height = 5)
 spplot(spatial_data_plotting, zcol = "cases", colorkey = list(labels = list(cex = 0.4)), col.regions = pal(100), cuts = 99,
        par.settings = list(axis.line = list(col =  'transparent')), lwd = 0.4,
        main = FALSE)
+dev.off()
 
 # Figure 2
+pdf(file = "plots/deaths_increase.pdf", height = 5)
 spplot(spatial_data_plotting, zcol = "deaths_increase", colorkey = list(labels = list(cex = 0.4)), col.regions = pal(100), cuts = 99,
        par.settings = list(axis.line = list(col =  'transparent')), lwd = 0.4,
        main = FALSE)
+dev.off()
 
 # creating SpatialPolygonsDataFrame
 map_eu_filtered <- map_eu[map_eu@data$NUTS_ID %in% data$code, ]
@@ -161,7 +164,7 @@ moran.test(cases_lm$residuals, W_borders_list, zero.policy = T)
 moran.test(cases_lm$residuals, W_countries_list, zero.policy = T)
 vif(cases_lm)
 
-# SLX - Table 12
+# Table A6
 slx_mod <- function(x, y){
   country_specific_vars <- c()
   regions_specific_vars <- c()
@@ -214,6 +217,10 @@ moran.test(cases_mixed_W_SEM$residuals, W_distance_list, zero.policy = T)
 moran.test(cases_mixed_W_SEM$residuals, W_borders_list, zero.policy = T)
 moran.test(cases_mixed_W_SEM$residuals, W_countries_list, zero.policy = T)
 
+# Table 5 - standardized regression coefficients
+cases_mixed_W_SEM$Coef[2:length(cases_mixed_W_SEM$Coef)]*(apply(x_cases, 2, sd)/sd(y_cases))
+cases_mixed_W_SARAR$Coef[2:length(cases_mixed_W_SARAR$Coef)]*(apply(x_cases, 2, sd)/sd(y_cases))
+
 round(AIC(cases_slx), 2)
 round(AIC(cases_lm), 2)
 round(2*cases_mixed_W_SARAR$loglik + 2*(ncol(x_cases)+1), 2)
@@ -237,7 +244,7 @@ moran.test(cases_SEM$residuals, W_distance_list, zero.policy = T)
 moran.test(cases_SEM$residuals, W_borders_list, zero.policy = T)
 moran.test(cases_SEM$residuals, W_countries_list, zero.policy = T)
 
-# Table 5
+# Table 6
 x_deaths <- spatial_data@data[c('cases', 'pollution', 'diabetes', 'mean_stringency', 
                                 'day', 'doctors', 'health_expenditure')]
 y_deaths <- spatial_data@data$deaths_increase
@@ -250,7 +257,7 @@ moran.test(deaths_lm$residuals, W_borders_list, zero.policy = T)
 moran.test(deaths_lm$residuals, W_countries_list, zero.policy = T)
 vif(deaths_lm)
 
-# SLX - Table 13
+# Table A7
 deaths_slx <- slx_mod(x_deaths, y_deaths)
 summary(deaths_slx)
 moran.test(deaths_slx$residuals, W_distance_list, zero.policy = T)
@@ -269,6 +276,9 @@ moran.test(deaths_SEM$residuals, W_countries_list, zero.policy = T)
 
 round(qnorm(c(0.025, 0.975), deaths_SEM$Coef[2], deaths_SEM$coef_se[2]), 3)
 
+# Table 7 - standardized regression coefficients
+deaths_SEM$Coef[2:length(deaths_SEM$Coef)]*(apply(x_deaths, 2, sd)/sd(y_deaths))
+
 round(AIC(deaths_slx), 2)
 round(AIC(deaths_lm), 2)
 round(2*deaths_SEM$loglik + 2*(ncol(x_deaths)+1), 2)
@@ -283,7 +293,7 @@ moran.test(deaths_mixed_W_SEM$residuals, W_distance_list, zero.policy = T)
 moran.test(deaths_mixed_W_SEM$residuals, W_borders_list, zero.policy = T)
 moran.test(deaths_mixed_W_SEM$residuals, W_countries_list, zero.policy = T)
 
-# Table 6
+# Table 8
 x_all_cases <- spatial_data@data[c('economic_damage_3_2', 
                                    'NACE_B_E', 
                                    'high_blood_pressure', 
@@ -347,7 +357,7 @@ moran.test(deaths_SEM_all_vars$residuals, W_distance_list, zero.policy = T)
 moran.test(deaths_SEM_all_vars$residuals, W_borders_list, zero.policy = T)
 moran.test(deaths_SEM_all_vars$residuals, W_countries_list, zero.policy = T)
 
-# Table 7
+# Table A1
 x2_cases <- spatial_data@data[c('economic_damage_2_2', 'NACE_B_E', 'high_blood_pressure', 
                                 'chronic_lower_respiratory_disease', 'population_aged_60', 
                                 'day', 'GDP', 'r1b','trust_in_health_authorities', 'diabetes')]
@@ -391,7 +401,7 @@ moran.test(cases_mixed_W_SEM_x3$residuals, W_distance_list, zero.policy = T)
 moran.test(cases_mixed_W_SEM_x3$residuals, W_borders_list, zero.policy = T)
 moran.test(cases_mixed_W_SEM_x3$residuals, W_countries_list, zero.policy = T)
 
-# Table 8
+# Table A2
 cases_mixed_W_SARAR_distance <- spatial.mixed.W(y_cases,
                                        x_cases,
                                        list(W_distance_list),
@@ -410,10 +420,10 @@ moran.test(deaths_mixed_W_SARAR_distance$residuals, W_distance_list, zero.policy
 moran.test(deaths_mixed_W_SARAR_distance$residuals, W_borders_list, zero.policy = T)
 moran.test(deaths_mixed_W_SARAR_distance$residuals, W_countries_list, zero.policy = T)
 
-### Instrumental variables
+### Instrumental variable approach
 set.seed(1)
 
-# Table 9
+# Table A3
 data_bma_cases_IV <- data[c('cases', 
                          'pollution', 
                          'doctors', 
@@ -442,7 +452,7 @@ bma_cases_IV <- bms(data_bma_cases_IV,
                  burn = 10000,
                  randomizeTimer = FALSE)
 
-# Table 10
+# Table A4
 data_bma_deaths_IV <- data[c('deaths_increase',
                           'pollution', 
                           'doctors', 
@@ -475,7 +485,7 @@ x_deaths_IV <- spatial_data@data[c('cases', 'pollution', 'diabetes', 'mean_strin
                                    'day', 'doctors', 'health_expenditure')]
 y_deaths_IV <- spatial_data@data$deaths_increase
 
-# Table 11
+# Table A5
 deaths_SEM_IV <- spatial.mixed.W(y_deaths_IV,
                               x_deaths_IV,
                               list(),
@@ -485,3 +495,62 @@ summarize(deaths_SEM_IV)
 moran.test(deaths_SEM_IV$residuals, W_distance_list, zero.policy = T)
 moran.test(deaths_SEM_IV$residuals, W_borders_list, zero.policy = T)
 moran.test(deaths_SEM_IV$residuals, W_countries_list, zero.policy = T)
+
+# Table A8
+set.seed(1)
+data_bma_deaths_net <- data[c('deaths_increase',
+                          'pollution', 
+                          'doctors', 
+                          'health_expenditure', 
+                          'day',
+                          'r1b', 
+                          'economic_damage_3_2', 
+                          'NACE_B_E', 
+                          'population_aged_60', 
+                          'GDP', 
+                          'density', 
+                          'mean_stringency', 
+                          'diabetes', 
+                          'chronic_lower_respiratory_disease',
+                          'trust_in_government',
+                          'trust_in_health_authorities')]
+
+bma_deaths_net <- bms(data_bma_deaths_net, 
+                  g = "UIP", 
+                  mprior = "random", 
+                  mprior.size = 6, 
+                  mcmc = "bd", 
+                  iter = iters,
+                  nmodel = 0,
+                  burn = 10000,
+                  randomizeTimer = FALSE)
+
+# Table A9
+x_deaths_net <- spatial_data@data[c('day', 'pollution', 'population_aged_60', 'trust_in_government', 
+                                'r1b', 'NACE_B_E', 'doctors')]
+y_deaths_net <- spatial_data@data$deaths_increase
+
+deaths_net_lm <- lm(deaths_increase~day+pollution+population_aged_60+trust_in_government
+                    +r1b+NACE_B_E+doctors, data = spatial_data@data)
+summary(deaths_net_lm)
+moran.test(deaths_net_lm$residuals, W_distance_list, zero.policy = T)
+moran.test(deaths_net_lm$residuals, W_borders_list, zero.policy = T)
+moran.test(deaths_net_lm$residuals, W_countries_list, zero.policy = T)
+
+deaths_net_mixed_W_SARAR <- spatial.mixed.W(y_deaths_net,
+                                       x_deaths_net,
+                                       list(W_borders_list),
+                                       list(W_borders_list, W_countries_list))
+summarize(deaths_net_mixed_W_SARAR)
+moran.test(deaths_net_mixed_W_SARAR$residuals, W_distance_list, zero.policy = T)
+moran.test(deaths_net_mixed_W_SARAR$residuals, W_borders_list, zero.policy = T)
+moran.test(deaths_net_mixed_W_SARAR$residuals, W_countries_list, zero.policy = T)
+
+deaths_net_mixed_W_SEM <- spatial.mixed.W(y_deaths_net,
+                                            x_deaths_net,
+                                            list(W_borders_list),
+                                            list(W_borders_list))
+summarize(deaths_net_mixed_W_SEM)
+moran.test(deaths_net_mixed_W_SEM$residuals, W_distance_list, zero.policy = T)
+moran.test(deaths_net_mixed_W_SEM$residuals, W_borders_list, zero.policy = T)
+moran.test(deaths_net_mixed_W_SEM$residuals, W_countries_list, zero.policy = T)
